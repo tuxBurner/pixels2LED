@@ -1,0 +1,24 @@
+{
+  "name": "pngtoledbackend",
+  "version": "1.0.0",
+  "description": "Converts a png to informations which are send over a mqtt bus",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ws2812",
+    "esp8266",
+    "png",
+    "mqtt"
+  ],
+  "author": "Sebastian Hardt (tuxBurner)",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.14.0",
+    "get-pixels": "^3.3.0",
+    "mqtt": "^1.11.2",
+    "multer": "^1.1.0",
+    "winston": "^2.2.0"
+  }
+}
