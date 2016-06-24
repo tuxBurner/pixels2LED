@@ -115,8 +115,8 @@ var parseImageData = function(pixels) {
   var res = '';
   var sep = '';
   var dataPos = 0;
-  for(x=0; x < pixels.shape[0]; x++) {
-    for(y=0; y < pixels.shape[1]; y++) {
+  for(y=0; y < pixels.shape[1]; y++) {
+    for(x=0; x < pixels.shape[0]; x++) {
       // read the rgb information
       var rgbData = '';
       for(i=0; i < 3; i++) {
@@ -132,6 +132,7 @@ var parseImageData = function(pixels) {
       dataPos+=(pixels.shape[2]-3);
     }
   }
+  winston.debug('[IMG] : data: '+res)
   return res;
 }
 
