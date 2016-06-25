@@ -132,7 +132,7 @@ var parseImageData = function(pixels) {
       dataPos+=(pixels.shape[2]-3);
     }
   }
-  winston.debug('[IMG] : data: '+res)
+  winston.debug('[IMG] : data: '+res);
   return res;
 }
 
