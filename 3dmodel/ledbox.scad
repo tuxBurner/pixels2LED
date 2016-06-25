@@ -1,7 +1,9 @@
 // length of the cube in mm
-length=150;
+length=170;
 // height of the cube in mm
-height=140;
+height=380;
+// hole size
+hole=100;
 
 // thikness of the wall
 wall=20;
@@ -16,13 +18,13 @@ difference() {
   }
   
   // right middle hole
-  translate([length/3,0,0]) {
-    cube(size=[50,wall,50]);
+  translate([(length-hole)/2,0,0]) {
+    cube(size=[hole,wall,50]);
   }
   
   // left middle hole
-  translate([length/3,length-wall,0]) {
-    cube(size=[50,wall,50]);
+  translate([(length-hole)/2,length-wall,0]) {
+    cube(size=[hole,wall,50]);
   }
 }
 }
