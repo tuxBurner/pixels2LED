@@ -1,9 +1,9 @@
 // length of the cube in mm
 length=170;
 // height of the cube in mm
-height=380;
+height=360;
 // hole size
-hole=100;
+hole=120;
 
 // thikness of the wall
 wall=20;
