@@ -161,60 +161,31 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("] ");
 
   // holds the color values for rgb
-  String colors[3];
   String currentColor = "";
-  // the crurent color pointer
-  int currColorIdx = 0;
   // current led
   int currLed = 0;
-  bool dimReaded = false; // readed the dim value ?
-  int dimVal = 0;
-  String dimStr = "";
-
 
   FastLED.clear();
-  /*for (int i = 0; i < NUM_LEDS; i++) {
-    leds[i].fadeToBlackBy( 64 );
-    }
-    FastLED.show();
-    delay(250);*/
+
 
   for (int i = 0; i < length; i++) {
     char currChar = (char)payload[i];
     // next number to read
     if (currChar == ',') {
+      // okay we reached the next color led
+      long number = strtol( currentColor.c_str(), NULL, 16);
 
+      leds[currLed++] = number;
+      // stop there are no more leds
+      if (currLed == NUM_LEDS) {
+        break;
+      }
       // dim was readed, well than read colors
-      if (dimReaded == true) {
-        colors[currColorIdx++] = currentColor;
-        currentColor = "";
-        // okay we reached the next color led
-        if (currColorIdx  == 3) {
-          currColorIdx = 0;
-          // TODO set color to led;
-          leds[currLed++].setRGB( colors[0].toInt(), colors[1].toInt(), colors[2].toInt());
-          // stop there are no more leds
-          if (currLed == NUM_LEDS) {
-            break;
-          }
-        }
-      } else {
-        dimVal = dimStr.toInt();
-        // just set the dim read to true
-        dimReaded = true;
-      }
+      currentColor = "";
     } else {
-      if (dimReaded == true) {
-        // read the char and concat it to a string
-        currentColor += currChar;
-      } else {
-        dimStr += currChar;
-      }
+      // read the char and concat it to a string
+      currentColor += currChar;
     }
-  }  
-  FastLED.show();
-  for(int i=0; i < NUM_LEDS; i++) {
-    leds[i].nscale8(dimVal);
   }
   FastLED.show();
 }
