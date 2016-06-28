@@ -1,12 +1,12 @@
 // length of the cube in mm
-length=170;
+length=160;
 // height of the cube in mm
 height=360;
 // hole size
 hole=120;
 
 // how many pixels to generate in a row
-numCopies=4;
+numCopies=8;
 
 // thikness of the wall
 wall=20;
