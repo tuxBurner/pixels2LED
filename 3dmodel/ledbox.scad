@@ -5,24 +5,29 @@ height=360;
 // hole size
 hole=120;
 
+// how many rows to generate
+rows=2;
+
 // how many pixels to generate in a row
-numCopies=8;
+cols=8;
 
 // thikness of the wall
 wall=20;
 
 // scale smaller so slicer sice is correct
 scale(0.1) {
-  for(i=[0:numCopies-1]) {
-    PixelCube(i*length);
+  for(j=[0:rows-1]) {  
+    for(i=[0:cols-1]) {
+      PixelCube(i*length,j*length);
+    }
   }
 }
 
 /**
 * Generates the pixelCube by the offset
 */
-module PixelCube(offSet) {
-  translate([0,offSet,0]) {
+module PixelCube(offSetCol,offsetRow) {
+  translate([offsetRow,offSetCol,0]) {
     difference() {
       cube(size=[length,length,height]);
       // hollow the cube
