@@ -7,7 +7,7 @@ height=150;
 rows=1;
 
 // how many pixels to generate in a row
-cols=4;
+cols=8;
 
 // thikness of the wall in mm tenth
 wall=10;
