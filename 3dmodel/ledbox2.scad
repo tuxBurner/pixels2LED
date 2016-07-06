@@ -1,7 +1,7 @@
 // length of the cube in mm tenth
 length=165;
 // height of the cube in mm tenth
-height=180;
+height=150;
 
 // hole width in mm tenth
 holeWidth=120;
@@ -19,7 +19,7 @@ cols=4;
 wall=10;
 
 // bottom thikness in mm tenth
-bottomThikness=3;
+bottomThikness=6;
 
 // scale smaller so slicer sice is correct
 scale(0.1) {
