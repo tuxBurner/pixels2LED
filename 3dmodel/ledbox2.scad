@@ -3,12 +3,6 @@ length=165;
 // height of the cube in mm tenth
 height=150;
 
-// hole width in mm tenth
-holeWidth=120;
-
-// hole height in mm tenth
-holeHeight=50;
-
 // how many rows to generate
 rows=1;
 
@@ -17,6 +11,13 @@ cols=4;
 
 // thikness of the wall in mm tenth
 wall=10;
+
+// hole width in mm tenth
+//holeWidth=120;
+holeWidth=length-wall*2;
+
+// hole height in mm tenth
+holeHeight=50;
 
 // bottom thikness in mm tenth
 bottomThikness=6;
