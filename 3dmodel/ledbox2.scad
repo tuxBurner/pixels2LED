@@ -1,10 +1,10 @@
 // length of the cube in mm tenth
 length=165;
 // height of the cube in mm tenth
-height=150;
+height=176;
 
 // how many rows to generate
-rows=1;
+rows=2;
 
 // how many pixels to generate in a row
 cols=8;
@@ -13,8 +13,8 @@ cols=8;
 wall=10;
 
 // hole width in mm tenth
-//holeWidth=120;
-holeWidth=length-wall*2;
+holeWidth=120;
+//holeWidth=length-wall*2;
 
 // hole height in mm tenth
 holeHeight=50;
