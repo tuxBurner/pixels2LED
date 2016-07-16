@@ -2,18 +2,20 @@
 length=165;
 
 // how many rows to generate
-rows=2;
+rows=4;
 
 // how many pixels to generate in a row
 cols=8;
 
 // thikness of the wall in mm tenth
-wall=10;
+wall=15;
 
 // bottom thikness in mm tenth
-bottomThikness=6;
+bottomThikness=10;
 
-// lenght off the inner 
+ledWidth=105;
+
+// lenght off the inner cube
 innerLength=length-wall*2;
 
 
@@ -31,12 +33,17 @@ scale(0.1) {
 
 module BottomCube(xOffset,yOffset) {
   translate([xOffset,yOffset,0]) {
+    // bottom
     cube([length,length,bottomThikness]);
+    //front side holders  
     translate([wall,wall,bottomThikness]) {
-      cube([innerLength,wall,bottomThikness]);
-    }
-    translate([wall,length-wall*2,bottomThikness]) {
-      cube([innerLength,wall,bottomThikness]);
+      difference() {
+        // led stripe holder
+        cube([innerLength,innerLength,bottomThikness]);
+        translate([0,(innerLength-ledWidth)/2,0]) {
+          cube([innerLength,ledWidth,bottomThikness]);
+        }
+      }
     }
   }
 }
