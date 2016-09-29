@@ -14,6 +14,11 @@ var config = require("./config.json")
  */
 var winston = require('winston');
 
+/**
+ * we need this to read the emoji's
+ */
+fs = require('fs');
+
 
 /**
  * We need some mqtt stuff to send the data to the display
@@ -32,6 +37,20 @@ mqttClient.on('connect', function() {
 var getPixels = require("get-pixels")
 
 /**
+ * Libary for emoji stuff
+ */
+var emojione = require('emojione');
+
+
+/**
+ * Libary for resizing images
+ */
+var sharp = require('sharp');
+
+// where the emoji's are stored at
+var emojiRootPath = 'node_modules/emojione/assets/png/';
+
+/**
  * Webserver stuff goes here
  */
 var express = require('express');
@@ -42,8 +61,9 @@ var upload = multer({
   dest: 'uploads/'
 })
 
-var fs = require('fs');
-
+/**
+ * this is called when the user uploads an image to the display.
+ */
 app.post('/image', upload.single('imageData'), function(req, res, next) {
 
   // check if we have the token in the header
@@ -52,16 +72,46 @@ app.post('/image', upload.single('imageData'), function(req, res, next) {
   }
 
   winston.info('[WEB] : Uploaded file found:', req.file);
-  readImageData(req.file.path, res);
+  readImageData(req.file.path, res, true);
 
 });
 
+/**
+ * Display an emoji on the display
+ */
+app.get('/emoji/:value', function(req, res) {
+  // check if we have the token in the header
+  if (checkToken(req, res) == false) {
+    return;
+  }
+  var emoji = req.params.value;
+
+  // check if it is defined
+  if (emoji === undefined) {
+    sendError(res, 'No emoji given', 500);
+    return;
+  }
+
+  var imageName = readEmoji(emoji);
+  if (imageName === emoji || imageName === undefined) {
+    sendError(res, 'Could not find emoji for: ' + emoji, 500);
+    return;
+  }
+  winston.info('[WEB] : Found emoji:(' + imageName + ')  for emoji: ' + emoji);
+
+  var filePath = emojiRootPath + imageName;
+  readImageData(filePath, res, false);
+});
+
+/**
+ * Setting the brightness
+ */
 app.get('/brightness/:value', function(req, res) {
   // check if we have the token in the header
   if (checkToken(req, res) == false) {
     return;
   }
-  brightness = req.params.value;
+  var brightness = req.params.value;
 
   // check if it is defined
   if (brightness === undefined) {
@@ -92,6 +142,38 @@ app.listen(config.webServerPort, function() {
   winston.info('[WEB] : Webapp listening on port ' + config.webServerPort + '!');
 });
 
+/**
+ * Code token from the emjione libary
+ */
+var readEmoji = function(emoji) {
+  var imageFileName = emoji.replace(emojione.regShortNames, function(shortname) {
+    if ((typeof shortname === 'undefined') || (shortname === '') || (!(shortname in emojione.emojioneList))) {
+      // if the shortname doesnt exist just return the entire match
+      return shortname;
+    } else {
+      var unicode = emojione.emojioneList[shortname].unicode[emojione.emojioneList[shortname].unicode.length - 1];
+      return unicode;
+    }
+  });
+  // replace ascii smileys !
+  imageFileName = imageFileName.replace(emojione.regAscii, function(entire, m1, m2, m3) {
+    if ((typeof m3 === 'undefined') || (m3 === '') || (!(emojione.unescapeHTML(m3) in emojione.asciiList))) {
+      // if the shortname doesnt exist just return the entire match
+      return entire;
+    }
+
+    m3 = emojione.unescapeHTML(m3);
+    unicode = emojione.asciiList[m3];
+
+    return unicode;
+  });
+
+  return imageFileName;
+};
+
+/**
+ * Checks if the given token is correct
+ */
 var checkToken = function(req, res) {
   // check if we have the token in the header
   winston.info('[WEB] : Checking if sended token matches configured token');
@@ -119,30 +201,53 @@ var sendError = function(res, message, status) {
 }
 
 /**
- * Reads the daata from the image and turns it into the data which is send over the mqtt bus
+ * Reads the data from the image and turns it into the data which is send over the mqtt bus
  */
-var readImageData = function(imagePath, res) {
+var readImageData = function(imagePath, res, unlink) {
 
   // we need a png at the end or getpixels will die :)
   var newImgPath = imagePath + '.png';
-  fs.renameSync(imagePath, newImgPath);
+  if (unlink === true) {
+    fs.renameSync(imagePath, newImgPath);
+  }
 
-  getPixels(newImgPath, function(err, pixels) {
-    if (err) {
-      var message = 'Could not read pixel data from: ' + newImgPath;
-      fs.unlinkSync(newImgPath);
-      winston.error('[IMG] : ' + message, err)
-      res.status(500).send(message);
-      return
-    }
+  var date = new Date();
+  var resizeImg = 'output_' + date + '.png';
 
-    fs.unlinkSync(newImgPath);
-    winston.info('[IMG] :  Readed Image to pixels')
+  sharp(newImgPath)
+    .resize(16, 16)
+    .toFile(resizeImg, function(err) {
 
-    var data = parseImageData(pixels);
+      if (err) {
+        sendError(res, 'Image could not be resized', 500);
+        return;
+      }
 
-    sendDataOverMqttBus(data, res);
-  })
+      winston.info('[IMG] resized image to 16x16');
+      getPixels(resizeImg, function(pixelsErr, pixels) {
+        if (pixelsErr) {
+          var message = 'Could not read pixel data from: ' + resizeImg;
+          fs.unlinkSync(resizeImg);
+          if (unlink === true) {
+            fs.unlinkSync(newImgPath);
+          }
+          sendError(res, message, 500);
+          return
+        }
+
+        fs.unlinkSync(resizeImg);
+        if (unlink === true) {
+          fs.unlinkSync(newImgPath);
+        }
+        winston.info('[IMG] :  Readed Image to pixels')
+
+        var data = parseImageData(pixels);
+
+        sendDataOverMqttBus(data, res);
+      })
+    });
+
+
 };
 
 /**
