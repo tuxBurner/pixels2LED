@@ -14,7 +14,14 @@
 
 // how many leds do we have ?
 #define NUM_LEDS 256
+
+#define DEFAULT_BRIGHTNESS  125
+
+// how many pixels per row do we have ?
+#define NUM_COLS_PER_ROW 16
+
 CRGB leds[NUM_LEDS];
+
 
 /* Set these to your desired credentials. */
 const char *ssid = "suckOnMe";
@@ -25,6 +32,7 @@ const char* mqtt_server = "192.168.0.3";
 const int mqtt_port = 1883;
 // which topic to listen to
 const char* mqtt_pixel_val_topic = "/pixels/value";
+const char* mqtt_pixel_brightness_topic = "/pixels/brightness";
 const char* mqtt_pixel_stat_topic = "/pixels/status";
 
 /* When was the last mqtt message status send ? */
@@ -43,6 +51,7 @@ PubSubClient mqttClient(espClient);
 */
 void setup() {
   FastLED.addLeds<NEOPIXEL, 0>(leds, NUM_LEDS);
+  FastLED.setBrightness(DEFAULT_BRIGHTNESS);
   Serial.begin(115200);
   setup_wifi();
   mqtt_setup();
@@ -132,7 +141,7 @@ void mqtt_loop() {
 }
 
 /**
-   Reconnects the mqtt client when it lost its connection
+ *  Reconnects the mqtt client when it lost its connection
 */
 void mqtt_reconnect() {
   // Loop until we're reconnected
@@ -152,26 +161,69 @@ void mqtt_reconnect() {
     }
   }
 }
+
+
 /**
-   Is called when something arrvies on the topic
+*   Is called when something arrvies on the topic
 */
 void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("mqtt Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
 
+  if(topic == mqtt_pixel_val_topic) {
+    setPixelsFromImage(payload,length);
+  }
+
+  if(topic == mqtt_pixel_brightness_topic) {
+    setBrightness(payload,length);
+  }
+}
+
+/**
+ * Sets the brightness at the leds
+ */
+void setBrightness(byte* payload, unsigned int length) {
+  String value = "";
+
+   // read the data
+   for (int i = 0; i < length; i++) {
+    char currChar = (char)payload[i];
+    // check if we get a number
+    if(isDigit(currChar) == false) {
+      return;
+    }
+     value += currChar;
+   }
+
+   int brightness = value.toInt();
+   if(brightness < 0 || brightness > 255) {
+    return;
+   }
+
+  FastLED.setBrightness(brightness);
+}
+
+/**
+* This consumes the stream for the pixels and displays them on the leds
+*/
+void setPixelsFromImage( byte* payload, unsigned int length) {
   // holds the color values for rgb
   String currentColor = "";
 
   // current led
   int currLed = 256;
 
+  // the column in the row we want to set the color
   int currCol = 0;
 
+  // how many leds got set ?
   int currentLedCount=0;
 
+  // moving from the right to the left in the row
   boolean rightLeft = true;
 
+  // clear  all the pixels
   FastLED.clear();
 
 
@@ -187,9 +239,9 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
         // led strip is going ##### ==>
         currLed = currLed-currCol;
         currCol++;
-        if(currCol == 16) {
+        if(currCol ==  NUM_COLS_PER_ROW) {
           rightLeft = false;
-          currLed = currLed-16;
+          currLed = currLed- NUM_COLS_PER_ROW;
         }
       } else {
         // led strip is going <== #####
@@ -197,7 +249,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
         currCol--;
         if(currCol == 0) {
           rightLeft = true;
-          currLed = currLed-16;
+          currLed = currLed- NUM_COLS_PER_ROW;
         }
       }
 
@@ -214,5 +266,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
       currentColor += currChar;
     }
   }
+
+  // show all the pixels
   FastLED.show();
+
 }
