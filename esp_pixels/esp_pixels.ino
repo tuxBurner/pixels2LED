@@ -13,7 +13,7 @@
 #include "FastLED.h"
 
 // how many leds do we have ?
-#define NUM_LEDS 4
+#define NUM_LEDS 256
 CRGB leds[NUM_LEDS];
 
 /* Set these to your desired credentials. */
@@ -162,8 +162,15 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 
   // holds the color values for rgb
   String currentColor = "";
+
   // current led
-  int currLed = 0;
+  int currLed = 256;
+
+  int currCol = 0;
+
+  int currentLedCount=0;
+
+  boolean rightLeft = true;
 
   FastLED.clear();
 
@@ -175,9 +182,29 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
       // okay we reached the next color led
       long number = strtol( currentColor.c_str(), NULL, 16);
 
-      leds[currLed++] = number;
+      // calculate what the current led is
+      if(rightLeft == true) {
+        // led strip is going ##### ==>
+        currLed = currLed-currCol;
+        currCol++;
+        if(currCol == 16) {
+          rightLeft = false;
+          currLed = currLed-16;
+        }
+      } else {
+        // led strip is going <== #####
+        currLed = currLed+currCol;
+        currCol--;
+        if(currCol == 0) {
+          rightLeft = true;
+          currLed = currLed-16;
+        }
+      }
+
+      leds[currLed-1] = number;
+      currentLedCount++;
       // stop there are no more leds
-      if (currLed == NUM_LEDS) {
+      if (currentLedCount == NUM_LEDS) {
         break;
       }
       // dim was readed, well than read colors
@@ -189,4 +216,3 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   }
   FastLED.show();
 }
-
