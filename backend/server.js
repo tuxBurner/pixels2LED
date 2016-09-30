@@ -295,7 +295,8 @@ var parseImageData = function(pixels) {
       // calculate the position in the rgb array
       var pos = (y % 2 === 0) ? lineStart - x : lineStart + x;
 
-      dataLine += pos + sep + rgbData + sep;
+
+      dataLine += (pos - 1) + sep + rgbData + sep;
       chunkCount++;
       if (chunkCount == config.colorSizeChunk) {
         winston.info(dataLine);

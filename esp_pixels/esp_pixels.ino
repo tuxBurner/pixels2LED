@@ -10,15 +10,15 @@
 
 // fast led pin order on the esp
 #define FASTLED_ESP8266_RAW_PIN_ORDER
-#include "FastLED.h"
+
+#include <FastLED.h>
 
 // how many leds do we have ?
 #define NUM_LEDS 256
 
+// the default brightness
 #define DEFAULT_BRIGHTNESS  125
 
-// how many pixels per row do we have ?
-#define NUM_COLS_PER_ROW 16
 
 CRGB leds[NUM_LEDS];
 
@@ -50,10 +50,12 @@ PubSubClient mqttClient(espClient);
    Arduino setup method
 */
 void setup() {
-  FastLED.addLeds<NEOPIXEL, 0>(leds, NUM_LEDS);
-  FastLED.setBrightness(DEFAULT_BRIGHTNESS);
-  Serial.begin(115200);
+  Serial.begin(115200);  
+  delay(1000);
+  FastLED.addLeds<NEOPIXEL, 2>(leds, NUM_LEDS);
+  FastLED.setBrightness(DEFAULT_BRIGHTNESS);  
   setup_wifi();
+  delay(1000);
   mqtt_setup();
 }
 
@@ -141,7 +143,7 @@ void mqtt_loop() {
 }
 
 /**
- *  Reconnects the mqtt client when it lost its connection
+    Reconnects the mqtt client when it lost its connection
 */
 void mqtt_reconnect() {
   // Loop until we're reconnected
@@ -164,106 +166,81 @@ void mqtt_reconnect() {
 
 
 /**
-*   Is called when something arrvies on the topic
+    Is called when something arrvies on the topic
 */
 void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("mqtt Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
 
-  if(topic == mqtt_pixel_val_topic) {
-    setPixelsFromImage(payload,length);
-  }
+  //if (topic == mqtt_pixel_val_topic) {
+  setPixelsFromImage(payload, length);
+  //}
 
-  if(topic == mqtt_pixel_brightness_topic) {
-    setBrightness(payload,length);
-  }
+  /*  if (topic == mqtt_pixel_brightness_topic) {
+      setBrightness(payload, length);
+    }*/
 }
 
 /**
- * Sets the brightness at the leds
- */
+   Sets the brightness at the leds
+*/
 void setBrightness(byte* payload, unsigned int length) {
   String value = "";
 
-   // read the data
-   for (int i = 0; i < length; i++) {
+  // read the data
+  for (int i = 0; i < length; i++) {
     char currChar = (char)payload[i];
     // check if we get a number
-    if(isDigit(currChar) == false) {
+    if (isDigit(currChar) == false) {
       return;
     }
-     value += currChar;
-   }
+    value += currChar;
+  }
 
-   int brightness = value.toInt();
-   if(brightness < 0 || brightness > 255) {
+  int brightness = value.toInt();
+  if (brightness < 0 || brightness > 255) {
     return;
-   }
+  }
 
   FastLED.setBrightness(brightness);
 }
 
 /**
-* This consumes the stream for the pixels and displays them on the leds
+  This consumes the stream for the pixels and displays them on the leds
 */
 void setPixelsFromImage( byte* payload, unsigned int length) {
-  // holds the color values for rgb
-  String currentColor = "";
 
-  // current led
-  int currLed = 256;
+  // holds the value of mqtt
+  String mqttData = "";
 
-  // the column in the row we want to set the color
-  int currCol = 0;
+  // the current led to set
+  int currLed = 0;
 
-  // how many leds got set ?
-  int currentLedCount=0;
-
-  // moving from the right to the left in the row
-  boolean rightLeft = true;
+  // marks if we read led or number
+  boolean readLed = false;
 
   // clear  all the pixels
-  FastLED.clear();
+  // FastLED.clear();
 
 
   for (int i = 0; i < length; i++) {
     char currChar = (char)payload[i];
     // next number to read
     if (currChar == ',') {
-      // okay we reached the next color led
-      long number = strtol( currentColor.c_str(), NULL, 16);
-
-      // calculate what the current led is
-      if(rightLeft == true) {
-        // led strip is going ##### ==>
-        currLed = currLed-currCol;
-        currCol++;
-        if(currCol ==  NUM_COLS_PER_ROW) {
-          rightLeft = false;
-          currLed = currLed- NUM_COLS_PER_ROW;
-        }
+      if (readLed == false) {
+        currLed = mqttData.toInt();
+        readLed = true;
       } else {
-        // led strip is going <== #####
-        currLed = currLed+currCol;
-        currCol--;
-        if(currCol == 0) {
-          rightLeft = true;
-          currLed = currLed- NUM_COLS_PER_ROW;
-        }
+        // okay we reached the next color led
+        long number = strtol( mqttData.c_str(), NULL, 16);
+        leds[currLed] = number;
+        readLed = false;
       }
-
-      leds[currLed-1] = number;
-      currentLedCount++;
-      // stop there are no more leds
-      if (currentLedCount == NUM_LEDS) {
-        break;
-      }
-      // dim was readed, well than read colors
-      currentColor = "";
+      mqttData = "";
     } else {
       // read the char and concat it to a string
-      currentColor += currChar;
+      mqttData += currChar;
     }
   }
 
