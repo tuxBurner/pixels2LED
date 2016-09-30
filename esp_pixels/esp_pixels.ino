@@ -154,6 +154,7 @@ void mqtt_reconnect() {
       Serial.println("mqtt connected");
       mqttClient.publish(mqtt_pixel_stat_topic, "PixelsClient connected");
       mqttClient.subscribe(mqtt_pixel_val_topic);
+      mqttClient.subscribe(mqtt_pixel_brightness_topic);
     } else {
       Serial.print("mqtt failed, rc=");
       Serial.print(mqttClient.state());
@@ -207,8 +208,10 @@ void setBrightness(byte* payload, unsigned int length) {
   if (brightness < 0 || brightness > 255) {
     return;
   }
-
+  // set the brightness
   FastLED.setBrightness(brightness);
+  // show all the pixels
+  FastLED.show();
 }
 
 /**
