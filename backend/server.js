@@ -54,7 +54,12 @@ var emojiRootPath = 'node_modules/emojione/assets/png/';
  * Webserver stuff goes here
  */
 var express = require('express');
+var bodyParser = require('body-parser');
 var app = express();
+app.use(bodyParser.json()); // to support JSON-encoded bodies
+app.use(bodyParser.urlencoded({ // to support URL-encoded bodies
+  extended: true
+}));
 
 var multer = require('multer');
 var upload = multer({
@@ -76,31 +81,18 @@ app.post('/image', upload.single('imageData'), function(req, res, next) {
 
 });
 
+
+app.post('/emoji', function(req, res) {
+  var emoji = req.body.value;
+  handleEmojiRequest(res, req, emoji);
+});
+
 /**
  * Display an emoji on the display
  */
 app.get('/emoji/:value', function(req, res) {
-  // check if we have the token in the header
-  if (checkToken(req, res) === false) {
-    return;
-  }
   var emoji = req.params.value;
-
-  // check if it is defined
-  if (emoji === undefined) {
-    sendError(res, 'No emoji given', 500);
-    return;
-  }
-
-  var imageName = readEmoji(emoji);
-  if (imageName === emoji || imageName === undefined) {
-    sendError(res, 'Could not find emoji for: ' + emoji, 500);
-    return;
-  }
-  winston.info('[WEB] : Found emoji:(' + imageName + ')  for emoji: ' + emoji);
-
-  var filePath = emojiRootPath + imageName;
-  readImageData(filePath, res, false);
+  handleEmojiRequest(res, req, emoji);
 });
 
 /**
@@ -143,10 +135,49 @@ app.listen(config.webServerPort, function() {
 });
 
 /**
+ * Handles the request for an emoji
+ */
+var handleEmojiRequest = function(res, req, emoji) {
+
+  // check if we have the token in the header
+  if (checkToken(req, res) === false) {
+    return;
+  }
+
+  // check if it is defined
+  if (emoji === undefined) {
+    sendError(res, 'No emoji given', 500);
+    return;
+  }
+
+  var imageName = readEmoji(emoji);
+  if (imageName === emoji || imageName === undefined) {
+    sendError(res, 'Could not find emoji for: ' + emoji, 500);
+    return;
+  }
+  winston.info('[WEB] : Found emoji:(' + imageName + ')  for emoji: ' + emoji);
+
+  var filePath = emojiRootPath + imageName;
+  readImageData(filePath, res, false);
+};
+
+/**
  * Code token from the emjione libary
  */
 var readEmoji = function(emoji) {
-  var imageFileName = emoji.replace(emojione.regShortNames, function(shortname) {
+
+  imageFileName = emoji.replace(emojione.regUnicode, function(unicodeChar) {
+    if ((typeof unicodeChar === 'undefined') || (unicodeChar === '') || (!(unicodeChar in emojione.jsEscapeMap))) {
+      // if the unicodeChar doesnt exist just return the entire match
+      return unicodeChar;
+    } else {
+      // get the unicode codepoint from the actual char
+      unicode = emojione.jsEscapeMap[unicodeChar];
+      return unicode;
+    }
+  });
+
+  imageFileName = imageFileName.replace(emojione.regShortNames, function(shortname) {
     if ((typeof shortname === 'undefined') || (shortname === '') || (!(shortname in emojione.emojioneList))) {
       // if the shortname doesnt exist just return the entire match
       return shortname;
@@ -286,7 +317,6 @@ var parseImageData = function(pixels) {
         dataPos++;
       }
 
-
       // we reached a new line andf is not the first one
       if (x % config.ledsPerCol === 0 && y !== 0) {
         lineStart = (y % 2 === 0) ? pos - config.ledsPerCol : pos - config.ledsPerCol;
@@ -295,11 +325,9 @@ var parseImageData = function(pixels) {
       // calculate the position in the rgb array
       var pos = (y % 2 === 0) ? lineStart - x : lineStart + x;
 
-
       dataLine += (pos - 1) + sep + rgbData + sep;
       chunkCount++;
       if (chunkCount == config.colorSizeChunk) {
-        winston.info(dataLine);
         res.push(dataLine);
         dataLine = '';
         chunkCount = 0;

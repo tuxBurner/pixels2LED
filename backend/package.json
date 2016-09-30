@@ -15,6 +15,7 @@
   "author": "Sebastian Hardt (tuxBurner)",
   "license": "ISC",
   "dependencies": {
+    "body-parser": "^1.15.2",
     "emojione": "^2.2.6",
     "express": "^4.14.0",
     "get-pixels": "^3.3.0",
