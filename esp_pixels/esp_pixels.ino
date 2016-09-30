@@ -50,10 +50,10 @@ PubSubClient mqttClient(espClient);
    Arduino setup method
 */
 void setup() {
-  Serial.begin(115200);  
+  Serial.begin(115200);
   delay(1000);
   FastLED.addLeds<NEOPIXEL, 2>(leds, NUM_LEDS);
-  FastLED.setBrightness(DEFAULT_BRIGHTNESS);  
+  FastLED.setBrightness(DEFAULT_BRIGHTNESS);
   setup_wifi();
   delay(1000);
   mqtt_setup();
@@ -171,21 +171,26 @@ void mqtt_reconnect() {
 void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("mqtt Message arrived [");
   Serial.print(topic);
-  Serial.print("] ");
+  Serial.println("] ");
 
-  //if (topic == mqtt_pixel_val_topic) {
-  setPixelsFromImage(payload, length);
-  //}
+  if (String(topic) == String(mqtt_pixel_val_topic)) {
+    setPixelsFromImage(payload, length);
+    return;
+  }
 
-  /*  if (topic == mqtt_pixel_brightness_topic) {
-      setBrightness(payload, length);
-    }*/
+  if (String(topic) == String(mqtt_pixel_brightness_topic)) {
+    setBrightness(payload, length);
+    return;
+  }
 }
 
 /**
    Sets the brightness at the leds
 */
 void setBrightness(byte* payload, unsigned int length) {
+
+  Serial.println("Set brightness");
+
   String value = "";
 
   // read the data
@@ -210,6 +215,8 @@ void setBrightness(byte* payload, unsigned int length) {
   This consumes the stream for the pixels and displays them on the leds
 */
 void setPixelsFromImage( byte* payload, unsigned int length) {
+
+  Serial.println("Set pixels");
 
   // holds the value of mqtt
   String mqttData = "";
