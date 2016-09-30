@@ -6,5 +6,7 @@
     "topicStatus": "/pixels/status"
   },
   "webServerPort": 3000,
-  "token": "cf97edf7-5ff9-4489-9ba0-8f89d4ee8144"
+  "token": "cf97edf7-5ff9-4489-9ba0-8f89d4ee8144",
+  "colorSizeChunk": 16,
+  "ledsPerCol": 16
 }

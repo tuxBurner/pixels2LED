@@ -34,7 +34,7 @@ mqttClient.on('connect', function() {
 /**
  * Libary for reading pixel data
  */
-var getPixels = require("get-pixels")
+var getPixels = require("get-pixels");
 
 /**
  * Libary for emoji stuff
@@ -56,10 +56,10 @@ var emojiRootPath = 'node_modules/emojione/assets/png/';
 var express = require('express');
 var app = express();
 
-var multer = require('multer')
+var multer = require('multer');
 var upload = multer({
   dest: 'uploads/'
-})
+});
 
 /**
  * this is called when the user uploads an image to the display.
@@ -67,7 +67,7 @@ var upload = multer({
 app.post('/image', upload.single('imageData'), function(req, res, next) {
 
   // check if we have the token in the header
-  if (checkToken(req, res) == false) {
+  if (checkToken(req, res) === false) {
     return;
   }
 
@@ -81,7 +81,7 @@ app.post('/image', upload.single('imageData'), function(req, res, next) {
  */
 app.get('/emoji/:value', function(req, res) {
   // check if we have the token in the header
-  if (checkToken(req, res) == false) {
+  if (checkToken(req, res) === false) {
     return;
   }
   var emoji = req.params.value;
@@ -108,7 +108,7 @@ app.get('/emoji/:value', function(req, res) {
  */
 app.get('/brightness/:value', function(req, res) {
   // check if we have the token in the header
-  if (checkToken(req, res) == false) {
+  if (checkToken(req, res) === false) {
     return;
   }
   var brightness = req.params.value;
@@ -120,7 +120,7 @@ app.get('/brightness/:value', function(req, res) {
   }
 
   // check if it is a number
-  if (isNaN(brightness) == true) {
+  if (isNaN(brightness) === true) {
     sendError(res, 'Brightness is not a number: ' + brightness, 500);
     return;
   }
@@ -190,7 +190,7 @@ var checkToken = function(req, res) {
   }
 
   return true;
-}
+};
 
 /**
  * Sends an error to the client
@@ -198,7 +198,7 @@ var checkToken = function(req, res) {
 var sendError = function(res, message, status) {
   winston.error('[WEB] : ' + message);
   res.status(status).send(message);
-}
+};
 
 /**
  * Reads the data from the image and turns it into the data which is send over the mqtt bus
@@ -232,19 +232,19 @@ var readImageData = function(imagePath, res, unlink) {
             fs.unlinkSync(newImgPath);
           }
           sendError(res, message, 500);
-          return
+          return;
         }
 
         fs.unlinkSync(resizeImg);
         if (unlink === true) {
           fs.unlinkSync(newImgPath);
         }
-        winston.info('[IMG] :  Readed Image to pixels')
+        winston.info('[IMG] :  Readed Image to pixels');
 
         var data = parseImageData(pixels);
 
         sendDataOverMqttBus(data, res);
-      })
+      });
     });
 
 
@@ -254,17 +254,27 @@ var readImageData = function(imagePath, res, unlink) {
  * Sends the data over mqtt bus and aknowledges it to the caller
  */
 var sendDataOverMqttBus = function(data, res) {
-  mqttClient.publish(config.mqtt.topicValue, data, function(error, granted) {
-    res.send('Send message to mqtt !');
-  });
+  for (var idx in data) {
+    var mqttData = data[idx];
+    mqttClient.publish(config.mqtt.topicValue, mqttData, function(error, granted) {
+      //res.send('Send message to mqtt !');
+    });
+  }
+  res.send('Send message to mqtt !');
 };
 
 /**
  * Parses the data from the pixels informations
  */
 var parseImageData = function(pixels) {
-  var res = '';
-  var sep = '';
+  var res = [];
+
+  var dataLine = '';
+  var chunkCount = 0;
+
+  var lineStart = 256;
+
+  var sep = ',';
   var dataPos = 0;
   for (y = 0; y < pixels.shape[1]; y++) {
     for (x = 0; x < pixels.shape[0]; x++) {
@@ -276,8 +286,24 @@ var parseImageData = function(pixels) {
         dataPos++;
       }
 
-      res += sep + rgbData;
-      sep = ',';
+
+      // we reached a new line andf is not the first one
+      if (x % config.ledsPerCol === 0 && y !== 0) {
+        lineStart = (y % 2 === 0) ? pos - config.ledsPerCol : pos - config.ledsPerCol;
+      }
+
+      // calculate the position in the rgb array
+      var pos = (y % 2 === 0) ? lineStart - x : lineStart + x;
+
+      dataLine += pos + sep + rgbData + sep;
+      chunkCount++;
+      if (chunkCount == config.colorSizeChunk) {
+        winston.info(dataLine);
+        res.push(dataLine);
+        dataLine = '';
+        chunkCount = 0;
+      }
+
 
       // there might be some more informations we just skip
       dataPos += (pixels.shape[2] - 3);
@@ -285,7 +311,7 @@ var parseImageData = function(pixels) {
   }
   winston.debug('[IMG] : data: ' + res);
   return res;
-}
+};
 
 /**
  * Converts number to hex and adds padding
