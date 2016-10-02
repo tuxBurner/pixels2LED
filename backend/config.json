@@ -8,5 +8,7 @@
   "webServerPort": 3000,
   "token": "cf97edf7-5ff9-4489-9ba0-8f89d4ee8144",
   "colorSizeChunk": 8,
-  "ledsPerCol": 16
+  "ledsPerCol": 16,
+  "emojionePath": "node_modules/emojione/assets/png/",
+  "randomTimeoutInSec": 30
 }
