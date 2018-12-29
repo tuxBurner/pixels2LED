@@ -19,6 +19,7 @@
 // the default brightness
 #define DEFAULT_BRIGHTNESS  125
 
+#define LED_PIN  2
 
 CRGB leds[NUM_LEDS];
 
@@ -98,7 +99,7 @@ void setup_wifi() {
 /**
   This consumes the stream for the pixels and displays them on the leds
 */
-void setPixelsFromImage( byte* payload, unsigned int length) {
+void setPixelsFromImage( byte* payload, uint length) {
 
   Serial.println("Set pixels");
 
@@ -106,7 +107,7 @@ void setPixelsFromImage( byte* payload, unsigned int length) {
   String mqttData = "";
 
   // the current led to set
-  int currLed = 0;
+  uint currLed = 0;
 
   // marks if we read led or number
   boolean readLed = false;
@@ -115,7 +116,7 @@ void setPixelsFromImage( byte* payload, unsigned int length) {
   // FastLED.clear();
 
 
-  for (int i = 0; i < length; i++) {
+  for (uint i = 0; i < length; i++) {
     char currChar = (char)payload[i];
     // next number to read
     if (currChar == ',') {
@@ -143,14 +144,14 @@ void setPixelsFromImage( byte* payload, unsigned int length) {
 /**
    Sets the brightness at the leds
 */
-void setBrightness(byte* payload, unsigned int length) {
+void setBrightness(byte* payload, uint length) {
 
   Serial.println("Set brightness");
 
   String value = "";
 
   // read the data
-  for (int i = 0; i < length; i++) {
+  for (uint i = 0; i < length; i++) {
     char currChar = (char)payload[i];
     // check if we get a number
     if (isDigit(currChar) == false) {
@@ -233,7 +234,7 @@ void mqtt_loop() {
   if (now - mqtt_lastStatusSend > 60000) {
     mqtt_lastStatusSend = now;
     ++mqtt_stats_counter;
-    snprintf (mqtt_stat_msg, 75, "Status  #%ld", mqtt_stats_counter);
+    snprintf (mqtt_stat_msg, 75, "Status  #%d", mqtt_stats_counter);
     mqttClient.publish(mqtt_pixel_stat_topic, mqtt_stat_msg);
   }
 }
@@ -244,7 +245,7 @@ void mqtt_loop() {
 void setup() {
   Serial.begin(115200);
   delay(1000);
-  FastLED.addLeds<WS2812B, 2>(leds, NUM_LEDS);
+  FastLED.addLeds<WS2812B, LED_PIN>(leds, NUM_LEDS);
   FastLED.setBrightness(DEFAULT_BRIGHTNESS);
   setup_wifi();
   delay(1000);
